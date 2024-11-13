@@ -1,3 +1,4 @@
+GitPython==3.1.31
 anyio==4.6.2.post1
 certifi==2024.8.30
 chardet==4.0.0

@@ -55,10 +55,20 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 if not WEBHOOK_URL:
     raise ValueError("WEBHOOK_URL environment variable is missing.")
 
-# Set the webhook
-application.bot.remove_webhook()
-application.bot.set_webhook(url=WEBHOOK_URL)
+# Function to check if webhook is set
+def set_webhook_once():
+    current_webhook = application.bot.get_webhook_info()  # Get current webhook info
+    if not current_webhook or not current_webhook['url']:
+        # Set webhook only if not already set
+        print("Setting webhook...")
+        application.bot.remove_webhook()  # Remove any previous webhook
+        application.bot.set_webhook(url=WEBHOOK_URL)  # Use the provided WEBHOOK_URL
+    else:
+        print("Webhook already set. Skipping...")
+
+# Call the function to set the webhook
+set_webhook_once()
 
 if __name__ == '__main__':
     # Run the Flask app to handle webhook requests
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))  # Using environment variable for port

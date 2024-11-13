@@ -72,6 +72,9 @@ def set_webhook_once():
     if not current_webhook or not current_webhook['url']:
         bot.remove_webhook()
         bot.set_webhook(url="https://snipe-bot-mq95.onrender.com/webhook")
+        print("Webhook set successfully.")
+    else:
+        print("Webhook already set. Skipping.")
 
 # Call the function to set webhook
 set_webhook_once()

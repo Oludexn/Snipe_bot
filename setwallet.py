@@ -1,7 +1,7 @@
 import os
 import telebot
 from flask import Flask, request
-from telebot.types import ReplyKeyboardMarkup, InlineKeyboardButton
+from telebot.types import ReplyKeyboardMarkup
 from nacl.signing import SigningKey
 import requests
 
@@ -118,7 +118,7 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 if not WEBHOOK_URL:
     raise ValueError("WEBHOOK_URL environment variable is missing.")
 
-# Set the webhook
+# Set the webhook once
 bot.remove_webhook()
 bot.set_webhook(url=WEBHOOK_URL)
 

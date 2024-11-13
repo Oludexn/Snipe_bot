@@ -1,10 +1,12 @@
+import os
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# Initialize bot with the provided token
-API_TOKEN = 'API_KEY'
-bot = telebot.TeleBot(API_TOKEN)
+# Fetch API_KEY from environment variables
+API_TOKEN = os.getenv('API_KEY')
 
+# Initialize the bot with the API token
+bot = telebot.TeleBot(API_TOKEN)
 
 # Store auto-buy status and wallet information for each user
 auto_buy_status = {}
@@ -33,14 +35,6 @@ def send_welcome(message):
     keyboard.row("🟢 BUY", "🔴 SELL")
     keyboard.row("🔥 SET WALLET")
     bot.send_message(message.chat.id, welcome_text, reply_markup=keyboard, parse_mode="Markdown")
-
-# Set bot commands
-bot.set_my_commands([
-    telebot.types.BotCommand("/start", "Start the bot"),
-    telebot.types.BotCommand("/buy", "Buy an item"),
-    telebot.types.BotCommand("/sell", "Sell an item")
-])
-
 
 # /buy button handler
 @bot.message_handler(func=lambda message: message.text == "🟢 BUY")

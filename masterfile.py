@@ -67,8 +67,14 @@ def webhook():
     return '', 200
 
 # Set webhook (Ensure the URL is correct and accessible)
-bot.remove_webhook()
-bot.set_webhook(url="https://snipe-bot-mq95.onrender.com/webhook")
+def set_webhook_once():
+    current_webhook = bot.get_webhook_info()  # Get current webhook info
+    if not current_webhook or not current_webhook['url']:
+        bot.remove_webhook()
+        bot.set_webhook(url="https://snipe-bot-mq95.onrender.com/webhook")
+
+# Call the function to set webhook
+set_webhook_once()
 
 # Start the Flask app (Make sure to use the port provided by Render)
 if __name__ == "__main__":

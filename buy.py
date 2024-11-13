@@ -92,6 +92,9 @@ def callback_toggle(call):
         reply_markup=markup
     )
 
-# Start polling
-print("Bot is running...")
-bot.polling(none_stop=True)
+# Webhook setup (Disable polling for deployment)
+if __name__ == "__main__":
+    bot.remove_webhook()  # Clear any existing webhook
+    bot.set_webhook(url=os.getenv("WEBHOOK_URL"))  # Set the webhook URL
+
+    print("Bot is running via webhook...")

@@ -1,17 +1,26 @@
+import os
+import logging
+from flask import Flask, request
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
-import logging
 
 # Set up logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Replace this with your bot's API token
-API_TOKEN = "7937879888:AAGAFsHlKzB8Ut8vgzrEWywrGjJpi0jbX4c"
+# Fetch API Token from environment variable
+API_TOKEN = os.getenv("API_KEY")
+
+# Ensure API_TOKEN is provided
+if not API_TOKEN:
+    raise ValueError("API_KEY environment variable is missing.")
 
 # Create an Application object using the bot token
 application = Application.builder().token(API_TOKEN).build()
+
+# Flask app setup for webhook
+app = Flask(__name__)
 
 # Command to start the bot and explain its functionality
 async def start(update: Update, context: CallbackContext):
@@ -31,5 +40,25 @@ async def start(update: Update, context: CallbackContext):
 # Set up command handlers
 application.add_handler(CommandHandler('start', start))
 
-# Start the bot
-application.run_polling()
+# Webhook handler for incoming updates from Telegram
+@app.route(f'/{API_TOKEN}', methods=['POST'])
+def webhook():
+    json_str = request.get_data(as_text=True)
+    update = Update.de_json(json_str, application.bot)
+    application.process_update(update)
+    return "OK", 200
+
+# Set webhook URL
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+
+# Ensure the webhook URL is provided
+if not WEBHOOK_URL:
+    raise ValueError("WEBHOOK_URL environment variable is missing.")
+
+# Set the webhook
+application.bot.remove_webhook()
+application.bot.set_webhook(url=WEBHOOK_URL)
+
+if __name__ == '__main__':
+    # Run the Flask app to handle webhook requests
+    app.run(host="0.0.0.0", port=5000)

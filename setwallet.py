@@ -1,19 +1,24 @@
+import os
 import telebot
-import requests
-from telebot.types import ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
+from flask import Flask, request
+from telebot.types import ReplyKeyboardMarkup, InlineKeyboardButton
 from nacl.signing import SigningKey
+import requests
 
-# Initialize bot with the provided token
-API_TOKEN = '7937879888:AAEwM-BAXiFMrjIQySGJkbCfs2ztx5LmtDk'
+# Fetch API Token from environment variable
+API_TOKEN = os.getenv("API_KEY")
+
+# Ensure API_TOKEN is provided
+if not API_TOKEN:
+    raise ValueError("API_KEY environment variable is missing.")
+
+# Initialize bot with API token
 bot = telebot.TeleBot(API_TOKEN)
 
-# Example save_wallet function
-def save_wallet(user_id, wallet_data):
-    # Store the wallet data in the 'wallets' dictionary using the user's ID as the key
-    wallets[user_id] = wallet_data
-    print(f"Wallet saved for user {user_id}")
+# Flask app setup for webhook
+app = Flask(__name__)
 
-# Solana RPC endpoint for checking balances (example endpoint)
+# Solana RPC endpoint for checking balances
 SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"
 
 wallets = {}
@@ -45,6 +50,20 @@ def verify_private_key(private_key):
 
     except Exception as e:
         return f"Invalid private key format or error: {str(e)}"
+
+# Webhook handler for incoming updates from Telegram
+@app.route(f'/{API_TOKEN}', methods=['POST'])
+def webhook():
+    json_str = request.get_data(as_text=True)
+    update = telebot.types.Update.de_json(json_str)
+    bot.process_new_updates([update])
+    return "OK", 200
+
+# Example save_wallet function
+def save_wallet(user_id, wallet_data):
+    # Store the wallet data in the 'wallets' dictionary using the user's ID as the key
+    wallets[user_id] = wallet_data
+    print(f"Wallet saved for user {user_id}")
 
 # /set wallet button handler
 @bot.message_handler(func=lambda message: message.text == "🔥 SET WALLET")
@@ -92,6 +111,17 @@ def send_welcome(message):
     main_menu(message.chat.id)
     bot.send_message(message.chat.id, welcome_text)
 
-# Start polling
-print("Bot is running...")
-bot.polling()
+# Set webhook URL
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+
+# Ensure the webhook URL is provided
+if not WEBHOOK_URL:
+    raise ValueError("WEBHOOK_URL environment variable is missing.")
+
+# Set the webhook
+bot.remove_webhook()
+bot.set_webhook(url=WEBHOOK_URL)
+
+if __name__ == '__main__':
+    # Run the Flask app to handle webhook requests
+    app.run(host="0.0.0.0", port=5000)

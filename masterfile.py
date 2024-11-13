@@ -13,13 +13,6 @@ bot = telebot.TeleBot(API_TOKEN)
 auto_buy_status = {}
 wallets = {}
 
-# Example save_wallet function
-def save_wallet(user_id, wallet_data):
-    # Store the wallet data in the 'wallets' dictionary using the user's ID as the key
-    wallets[user_id] = wallet_data
-    print(f"Wallet saved for user {user_id}")
-
-
 # Helper function to check or set auto-buy status
 def toggle_auto_buy(user_id, platform):
     if user_id not in auto_buy_status:

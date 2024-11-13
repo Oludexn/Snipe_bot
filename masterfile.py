@@ -1,7 +1,7 @@
 import os
 import requests
 import telebot
-import importlib.util
+from flask import Flask, request
 
 # Fetch API_KEY from environment variables
 API_TOKEN = os.getenv('API_KEY')
@@ -56,6 +56,20 @@ for file_url in python_files:
     print(f"Running {file_url}")
     run_python_code_from_url(file_url)
 
-# Start polling
-print("Bot is running...")
-bot.polling(none_stop=True)
+# Flask setup for webhook handling
+app = Flask(__name__)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    json_str = request.get_data().decode('UTF-8')
+    update = telebot.types.Update.de_json(json_str)
+    bot.process_new_updates([update])
+    return '', 200
+
+# Set webhook (Ensure the URL is correct and accessible)
+bot.remove_webhook()
+bot.set_webhook(url="https://snipe-bot-mq95.onrender.com/webhook")
+
+# Start the Flask app (Make sure to use the port provided by Render)
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8080)))
